@@ -4,7 +4,6 @@ import {
   listObjectAttachments,
   type AddAttachmentInput,
 } from "./attachments.js";
-import { parseCaseText, resolveCaseText } from "./case-text.js";
 import { extractId, firstId } from "./ids.js";
 import { caseStatusIdByName, categoryIdByName, priorityIdByName } from "./resolvers.js";
 import type { ListLimit, PageResult } from "./types.js";
@@ -36,10 +35,6 @@ export interface CreateCaseInput {
   status_id?: number;
   automated?: boolean;
   text?: string;
-  setup?: string;
-  actions?: string;
-  expected?: string;
-  breakdown?: string;
   notes?: string;
   script?: string;
   arguments?: string;
@@ -56,10 +51,6 @@ export interface UpdateCaseInput {
   category?: string;
   automated?: boolean;
   text?: string;
-  setup?: string;
-  actions?: string;
-  expected?: string;
-  breakdown?: string;
   notes?: string;
   script?: string;
   arguments?: string;
@@ -92,22 +83,6 @@ export async function searchCases(
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
-function withParsedCaseText(testCase: unknown): unknown {
-  if (!testCase || typeof testCase !== "object") return testCase;
-  const row = testCase as Record<string, unknown>;
-  const parsed = parseCaseText(typeof row.text === "string" ? row.text : "");
-  return {
-    ...row,
-    setup: (typeof row.setup === "string" && row.setup) || parsed.setup,
-    actions: (typeof row.actions === "string" && row.actions) || parsed.actions,
-    expected:
-      (typeof row.expected === "string" && row.expected) ||
-      (typeof row.expected_results === "string" && row.expected_results) ||
-      parsed.expected,
-    breakdown: (typeof row.breakdown === "string" && row.breakdown) || parsed.breakdown,
-  };
-}
-
 export async function getCase(
   rpc: KiwiRpcClient,
   params: GetCaseParams,
@@ -115,7 +90,7 @@ export async function getCase(
   const rows = await rpc.call<unknown[]>("TestCase.filter", [{ id: params.id }]);
   const testCase = rows?.[0];
   if (!testCase) throw new Error(`Тест-кейс ${params.id} не найден`);
-  const out: { case: unknown; executions?: PageResult } = { case: withParsedCaseText(testCase) };
+  const out: { case: unknown; executions?: PageResult } = { case: testCase };
   if (params.include_executions) {
     const execs = await rpc.call<unknown[]>("TestExecution.filter", [{ case: params.id }]);
     out.executions = rpc.page(execs, 50);
@@ -159,8 +134,7 @@ export async function createCase(
     case_status: input.status_id ?? (await caseStatusIdByName(rpc, "CONFIRMED")),
   };
   if (input.automated !== undefined) values.is_automated = input.automated;
-  const text = resolveCaseText(input);
-  if (text !== undefined) values.text = text;
+  if (input.text !== undefined) values.text = input.text;
   if (input.notes) values.notes = input.notes;
   if (input.script) values.script = input.script;
   if (input.arguments) values.arguments = input.arguments;
@@ -190,22 +164,7 @@ export async function updateCase(rpc: KiwiRpcClient, input: UpdateCaseInput): Pr
   const values: Record<string, unknown> = {};
   if (input.summary !== undefined) values.summary = input.summary;
   if (input.automated !== undefined) values.is_automated = input.automated;
-  const hasBodyPatch =
-    input.setup !== undefined ||
-    input.actions !== undefined ||
-    input.expected !== undefined ||
-    input.breakdown !== undefined;
-  const hasFullBody =
-    input.setup !== undefined && input.actions !== undefined && input.expected !== undefined;
-  const needsCurrentText = input.text === undefined && hasBodyPatch && !hasFullBody;
-  let current: { text?: string } | undefined;
-  if (needsCurrentText) {
-    const rows = await rpc.call<unknown[]>("TestCase.filter", [{ id: input.id }]);
-    const row = rows?.[0];
-    if (row && typeof row === "object") current = row as { text?: string };
-  }
-  const text = resolveCaseText(input, current);
-  if (text !== undefined) values.text = text;
+  if (input.text !== undefined) values.text = input.text;
   if (input.notes !== undefined) values.notes = input.notes;
   if (input.script !== undefined) values.script = input.script;
   if (input.arguments !== undefined) values.arguments = input.arguments;

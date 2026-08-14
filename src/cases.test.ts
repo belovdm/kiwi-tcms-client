@@ -38,7 +38,7 @@ const catalogs = {
 };
 
 describe("KiwiClient.cases.create", () => {
-  it("writes setup/actions/expected into TestCase.text so Kiwi 16 stores the steps", async () => {
+  it("writes text into TestCase.text verbatim, with no section parsing", async () => {
     const createdCalls: unknown[] = [];
     rpcByMethod({
       ...catalogs,
@@ -51,14 +51,12 @@ describe("KiwiClient.cases.create", () => {
     const client = new KiwiClient({ ...AUTH, project: "Core" });
     await client.cases.create({
       summary: "Login",
-      setup: "App is open.",
-      actions: "1. Click Add",
-      expected: "Item appears",
+      text: "## Подготовка\nApp is open.\n\n## Шаги\n1. Click Add\n\n## Ожидаемый результат\nItem appears",
     });
 
     const payload = (createdCalls[0] as unknown[])[0] as Record<string, unknown>;
     expect(payload.text).toBe(
-      "## Setup\nApp is open.\n\n## Steps\n1. Click Add\n\n## Expected\nItem appears",
+      "## Подготовка\nApp is open.\n\n## Шаги\n1. Click Add\n\n## Ожидаемый результат\nItem appears",
     );
   });
 
@@ -86,7 +84,7 @@ describe("KiwiClient.cases.create", () => {
     expect(payload.requirement).toBe("docs/requirements/auth.md");
   });
 
-  it("uses an explicit text field instead of composing sections", async () => {
+  it("omits text from the payload when not given", async () => {
     const createdCalls: unknown[] = [];
     rpcByMethod({
       ...catalogs,
@@ -97,41 +95,30 @@ describe("KiwiClient.cases.create", () => {
     });
 
     const client = new KiwiClient({ ...AUTH, project: "Core" });
-    await client.cases.create({
-      summary: "Login",
-      setup: "ignored when text is set",
-      text: "## Expected\nAlready markdown",
-    });
+    await client.cases.create({ summary: "Login" });
 
     const payload = (createdCalls[0] as unknown[])[0] as Record<string, unknown>;
-    expect(payload.text).toBe("## Expected\nAlready markdown");
+    expect(payload.text).toBeUndefined();
   });
 });
 
 describe("KiwiClient.cases.update", () => {
-  it("writes setup/actions/expected into TestCase.text", async () => {
+  it("writes text into TestCase.text verbatim, with no merge against the current text", async () => {
     const updateCalls: unknown[] = [];
     rpcByMethod({
       "TestCase.update": (params) => {
         updateCalls.push(params);
-        return { id: 7, text: "" };
+        return { id: 7 };
       },
     });
 
     const client = new KiwiClient(AUTH);
     await client.cases.update({
       id: 7,
-      setup: "Seed Eat, Sleep, Repeat.",
-      actions: "1. Click Add",
-      expected: "A blank task is added.",
+      text: "## Ожидаемый результат\nA blank task is added.",
     });
 
-    expect(updateCalls[0]).toEqual([
-      7,
-      {
-        text: "## Setup\nSeed Eat, Sleep, Repeat.\n\n## Steps\n1. Click Add\n\n## Expected\nA blank task is added.",
-      },
-    ]);
+    expect(updateCalls[0]).toEqual([7, { text: "## Ожидаемый результат\nA blank task is added." }]);
   });
 
   it("writes requirement on update without touching text", async () => {
@@ -148,42 +135,16 @@ describe("KiwiClient.cases.update", () => {
 
     expect(updateCalls[0]).toEqual([7, { requirement: "docs/requirements/auth.md" }]);
   });
-
-  it("merges a partial body update with the current text so other sections stay", async () => {
-    const updateCalls: unknown[] = [];
-    rpcByMethod({
-      "TestCase.filter": () => [
-        {
-          id: 7,
-          text: "## Setup\nApp is open.\n\n## Steps\n1. Click Add\n\n## Expected\nOld",
-        },
-      ],
-      "TestCase.update": (params) => {
-        updateCalls.push(params);
-        return { id: 7 };
-      },
-    });
-
-    const client = new KiwiClient(AUTH);
-    await client.cases.update({ id: 7, expected: "New result" });
-
-    expect(updateCalls[0]).toEqual([
-      7,
-      {
-        text: "## Setup\nApp is open.\n\n## Steps\n1. Click Add\n\n## Expected\nNew result",
-      },
-    ]);
-  });
 });
 
 describe("KiwiClient.cases.get", () => {
-  it("exposes setup, actions, and expected parsed from text", async () => {
+  it("returns text raw, without deriving setup/actions/expected from it", async () => {
     rpcByMethod({
       "TestCase.filter": () => [
         {
           id: 7,
-          summary: "Empty name",
-          text: "## Setup\nApp is open.\n\n## Steps\n1. Click Add\n\n## Expected\nA blank task is added.",
+          summary: "Пустое имя",
+          text: "## Подготовка\nПриложение открыто.\n\n## Шаги\n1. Нажать «Добавить»\n\n## Ожидаемый результат\nДобавлена пустая задача.",
         },
       ],
     });
@@ -192,8 +153,11 @@ describe("KiwiClient.cases.get", () => {
     const result = await client.cases.get({ id: 7 });
     const card = result.case as Record<string, unknown>;
 
-    expect(card.setup).toBe("App is open.");
-    expect(card.actions).toBe("1. Click Add");
-    expect(card.expected).toBe("A blank task is added.");
+    expect(card.text).toBe(
+      "## Подготовка\nПриложение открыто.\n\n## Шаги\n1. Нажать «Добавить»\n\n## Ожидаемый результат\nДобавлена пустая задача.",
+    );
+    expect(card.setup).toBeUndefined();
+    expect(card.actions).toBeUndefined();
+    expect(card.expected).toBeUndefined();
   });
 });
