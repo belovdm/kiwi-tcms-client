@@ -62,6 +62,30 @@ describe("KiwiClient.cases.create", () => {
     );
   });
 
+  it("writes script, arguments, and requirement as plain fields", async () => {
+    const createdCalls: unknown[] = [];
+    rpcByMethod({
+      ...catalogs,
+      "TestCase.create": (params) => {
+        createdCalls.push(params);
+        return { id: 79 };
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.cases.create({
+      summary: "Login",
+      script: "tests/login.spec.ts",
+      arguments: "--project=chromium",
+      requirement: "docs/requirements/auth.md",
+    });
+
+    const payload = (createdCalls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(payload.script).toBe("tests/login.spec.ts");
+    expect(payload.arguments).toBe("--project=chromium");
+    expect(payload.requirement).toBe("docs/requirements/auth.md");
+  });
+
   it("uses an explicit text field instead of composing sections", async () => {
     const createdCalls: unknown[] = [];
     rpcByMethod({
@@ -108,6 +132,21 @@ describe("KiwiClient.cases.update", () => {
         text: "## Setup\nSeed Eat, Sleep, Repeat.\n\n## Steps\n1. Click Add\n\n## Expected\nA blank task is added.",
       },
     ]);
+  });
+
+  it("writes requirement on update without touching text", async () => {
+    const updateCalls: unknown[] = [];
+    rpcByMethod({
+      "TestCase.update": (params) => {
+        updateCalls.push(params);
+        return { id: 7 };
+      },
+    });
+
+    const client = new KiwiClient(AUTH);
+    await client.cases.update({ id: 7, requirement: "docs/requirements/auth.md" });
+
+    expect(updateCalls[0]).toEqual([7, { requirement: "docs/requirements/auth.md" }]);
   });
 
   it("merges a partial body update with the current text so other sections stay", async () => {

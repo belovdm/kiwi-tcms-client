@@ -38,7 +38,10 @@ export function parseCaseText(text: string): Required<CaseTextSections> {
     if (match) {
       flush();
       const name = match[1].toLowerCase();
-      current = name === "steps" || name === "actions" ? "actions" : (name as keyof Required<CaseTextSections>);
+      current =
+        name === "steps" || name === "actions"
+          ? "actions"
+          : (name as keyof Required<CaseTextSections>);
       continue;
     }
     if (current) buf.push(line);

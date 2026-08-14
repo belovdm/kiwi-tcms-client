@@ -43,6 +43,7 @@ export interface CreateCaseInput {
   notes?: string;
   script?: string;
   arguments?: string;
+  requirement?: string;
   tags?: string;
 }
 
@@ -62,6 +63,7 @@ export interface UpdateCaseInput {
   notes?: string;
   script?: string;
   arguments?: string;
+  requirement?: string;
 }
 
 export async function searchCases(
@@ -162,6 +164,7 @@ export async function createCase(
   if (input.notes) values.notes = input.notes;
   if (input.script) values.script = input.script;
   if (input.arguments) values.arguments = input.arguments;
+  if (input.requirement) values.requirement = input.requirement;
 
   const created = (await rpc.call<{ id?: number }>("TestCase.create", [values])) as { id?: number };
   const newId = extractId(created?.id);
@@ -206,6 +209,7 @@ export async function updateCase(rpc: KiwiRpcClient, input: UpdateCaseInput): Pr
   if (input.notes !== undefined) values.notes = input.notes;
   if (input.script !== undefined) values.script = input.script;
   if (input.arguments !== undefined) values.arguments = input.arguments;
+  if (input.requirement !== undefined) values.requirement = input.requirement;
 
   if (input.status_id) values.case_status = input.status_id;
   else if (input.status) values.case_status = await caseStatusIdByName(rpc, input.status);
