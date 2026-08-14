@@ -12,7 +12,7 @@ export async function listUsers(rpc: KiwiRpcClient, params: ListUsersParams = {}
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
-/** Текущий пользователь токена: User.filter без query. */
+/** Текущий залогиненный пользователь: User.filter без query. */
 export async function getCurrentUser(rpc: KiwiRpcClient): Promise<unknown> {
   const rows = await rpc.call<unknown[]>("User.filter");
   return Array.isArray(rows) ? (rows[0] ?? rows) : rows;

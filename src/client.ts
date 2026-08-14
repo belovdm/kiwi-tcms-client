@@ -2,8 +2,8 @@
  * JSON-RPC клиент Kiwi TCMS.
  *
  * Киwi TCMS exposes /json-rpc/ endpoint (а также legacy /xml-rpc/).
- * Аутентификация — персональный API-токен в заголовке:
- *   Authorization: Token <key>
+ * Аутентификация — как в официальном tcms-api: Auth.login(username, password),
+ * дальше Cookie: sessionid=<session key>. Сессия обновляется каждые 4 минуты.
  */
 
 import { firstId } from "./ids.js";
@@ -27,11 +27,16 @@ import * as tagsApi from "./tags.js";
 import * as usersApi from "./users.js";
 import * as versionsApi from "./versions.js";
 
+/** Как в tcms-api: переподключение каждые 4 минуты, чтобы не поймать SSL timeout. */
+const SESSION_TTL_MS = 4 * 60 * 1000;
+
 export interface KiwiClientConfig {
   /** Базовый URL инстанса Kiwi TCMS, например https://tcms.example.com */
   url: string;
-  /** Персональный API-токен (Authorization: Token <key>) */
-  token: string;
+  /** Логин Kiwi TCMS (Auth.login), как в официальном tcms-api */
+  username: string;
+  /** Пароль Kiwi TCMS */
+  password: string;
   /** Проект = Product в терминах Kiwi TCMS (имя или id). Используется как фильтр по умолчанию. */
   project?: string | null;
   /** Таймаут одного JSON-RPC запроса, мс */
@@ -57,17 +62,38 @@ interface JsonRpcResponse {
   error?: { code?: number; message?: string; data?: unknown };
 }
 
+function readSetCookies(headers: Headers): string[] {
+  const raw =
+    typeof headers.getSetCookie === "function"
+      ? headers.getSetCookie()
+      : headerValues(headers, "set-cookie");
+  return raw
+    .map((h) => h.split(";", 1)[0]?.trim() ?? "")
+    .filter((c) => c.includes("="));
+}
+
+function headerValues(headers: Headers, name: string): string[] {
+  const single = headers.get(name);
+  return single ? [single] : [];
+}
+
 export class KiwiRpcClient {
   private nextId = 1;
   private productIdCache = new Map<string, number>();
   private readonly url: string;
-  private readonly token: string;
+  readonly username: string;
+  private readonly password: string;
   readonly project: string | null;
   private readonly timeoutMs: number;
+  private sessionId: string | null = null;
+  private cookies: string[] = [];
+  private loggedInAt = 0;
+  private loginInFlight: Promise<void> | null = null;
 
   constructor(cfg: KiwiClientConfig) {
     this.url = cfg.url;
-    this.token = cfg.token;
+    this.username = cfg.username;
+    this.password = cfg.password;
     this.project = cfg.project && cfg.project.trim() !== "" ? cfg.project.trim() : null;
     this.timeoutMs = cfg.timeoutMs ?? 30_000;
   }
@@ -85,19 +111,76 @@ export class KiwiRpcClient {
     method: string,
     params: unknown[] | Record<string, unknown> = []
   ): Promise<T> {
+    const isLogin = method === "Auth.login";
+    if (!isLogin) await this.ensureSession();
+    return this.post<T>(method, params, { retryOnAuthFailure: !isLogin });
+  }
+
+  private async ensureSession(): Promise<void> {
+    if (this.sessionId && Date.now() - this.loggedInAt < SESSION_TTL_MS) return;
+    if (this.loginInFlight) return this.loginInFlight;
+    this.loginInFlight = this.authenticate().finally(() => {
+      this.loginInFlight = null;
+    });
+    return this.loginInFlight;
+  }
+
+  private async authenticate(): Promise<void> {
+    this.sessionId = null;
+    this.cookies = [];
+    const session = await this.post<unknown>("Auth.login", [this.username, this.password], {
+      retryOnAuthFailure: false,
+    });
+    if (typeof session !== "string" || session.trim() === "") {
+      throw new Error(
+        "Auth.login не вернул session id. Проверьте KIWI_USERNAME / KIWI_PASSWORD."
+      );
+    }
+    this.applySession(session, this.cookies);
+  }
+
+  private applySession(sessionId: string, cookies: string[]): void {
+    const jar = [...cookies];
+    if (!jar.some((c) => c.toLowerCase().startsWith("sessionid="))) {
+      jar.push(`sessionid=${sessionId}`);
+    }
+    this.cookies = jar;
+    this.sessionId = sessionId;
+    this.loggedInAt = Date.now();
+  }
+
+  private dropSession(): void {
+    this.sessionId = null;
+    this.cookies = [];
+    this.loggedInAt = 0;
+  }
+
+  private async post<T>(
+    method: string,
+    params: unknown[] | Record<string, unknown>,
+    opts: { retryOnAuthFailure: boolean }
+  ): Promise<T> {
     const payload = { jsonrpc: "2.0", id: this.nextId++, method, params };
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (this.cookies.length > 0) {
+      headers.Cookie = this.cookies.join("; ");
+    }
+    const csrf = this.cookies.find((c) => c.toLowerCase().startsWith("csrftoken="));
+    if (csrf) {
+      headers["X-CSRFToken"] = csrf.slice(csrf.indexOf("=") + 1);
+    }
+
     let res: Response;
     try {
       res = await fetch(this.endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${this.token}`,
-        },
+        headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
@@ -115,13 +198,22 @@ export class KiwiRpcClient {
     }
     clearTimeout(timer);
 
+    const setCookies = readSetCookies(res.headers);
+    if (setCookies.length > 0) {
+      this.mergeCookies(setCookies);
+    }
+
     const raw = await res.text();
 
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
+        if (opts.retryOnAuthFailure) {
+          this.dropSession();
+          await this.authenticate();
+          return this.post<T>(method, params, { retryOnAuthFailure: false });
+        }
         throw new Error(
-          `Аутентификация не удалась (HTTP ${res.status}). Проверьте KIWI_TOKEN: ` +
-            `токен создаётся в Kiwi TCMS (меню пользователя -> API tokens).`
+          `Аутентификация не удалась (HTTP ${res.status}). Проверьте KIWI_USERNAME / KIWI_PASSWORD.`
         );
       }
       if (res.status === 404) {
@@ -141,13 +233,35 @@ export class KiwiRpcClient {
     }
 
     if (json.error) {
-      throw new KiwiRpcError(
-        `${method}: ${json.error.message ?? "RPC-ошибка"}`,
-        json.error.code ?? -1,
-        json.error.data
-      );
+      const message = json.error.message ?? "RPC-ошибка";
+      if (method === "Auth.login") {
+        throw new KiwiRpcError(
+          `Auth.login: ${message}. Проверьте KIWI_USERNAME / KIWI_PASSWORD.`,
+          json.error.code ?? -1,
+          json.error.data
+        );
+      }
+      throw new KiwiRpcError(`${method}: ${message}`, json.error.code ?? -1, json.error.data);
     }
+
+    if (method === "Auth.login" && typeof json.result === "string") {
+      this.applySession(json.result, this.cookies);
+    }
+
     return json.result as T;
+  }
+
+  private mergeCookies(incoming: string[]): void {
+    const byName = new Map<string, string>();
+    for (const cookie of this.cookies) {
+      const name = cookie.slice(0, cookie.indexOf("=")).toLowerCase();
+      byName.set(name, cookie);
+    }
+    for (const cookie of incoming) {
+      const name = cookie.slice(0, cookie.indexOf("=")).toLowerCase();
+      byName.set(name, cookie);
+    }
+    this.cookies = [...byName.values()];
   }
 
   /** Ограничить список строк и вернуть вместе с общим числом. */

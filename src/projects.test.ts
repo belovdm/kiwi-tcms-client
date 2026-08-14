@@ -5,6 +5,7 @@ import { KiwiClient } from "./client.js";
 
 const BASE_URL = "http://kiwi.local";
 const ENDPOINT = `${BASE_URL}/json-rpc/`;
+const AUTH = { url: BASE_URL, username: "admin", password: "secret" };
 const server = setupServer();
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
@@ -15,6 +16,9 @@ function rpcByMethod(handlers: Record<string, (params: unknown) => unknown>) {
   server.use(
     http.post(ENDPOINT, async ({ request }) => {
       const body = (await request.json()) as { id: number; method: string; params: unknown };
+      if (body.method === "Auth.login" && !handlers["Auth.login"]) {
+        return HttpResponse.json({ jsonrpc: "2.0", id: body.id, result: "sess-test" });
+      }
       const fn = handlers[body.method];
       if (!fn) return HttpResponse.json({ jsonrpc: "2.0", id: body.id, error: { message: body.method } }, { status: 200 });
       return HttpResponse.json({ jsonrpc: "2.0", id: body.id, result: fn(body.params) });
@@ -32,7 +36,7 @@ describe("KiwiClient.projects", () => {
       ],
     });
 
-    const client = new KiwiClient({ url: BASE_URL, token: "tok" });
+    const client = new KiwiClient(AUTH);
     const result = await client.projects.list({ limit: 2 });
 
     expect(result).toEqual({
@@ -56,10 +60,12 @@ describe("KiwiClient.ping", () => {
       },
     });
 
-    const client = new KiwiClient({ url: BASE_URL, token: "tok", project: "Payments" });
+    const client = new KiwiClient({ ...AUTH, project: "Payments" });
     const result = await client.ping();
 
     expect(result.status).toBe("ok");
+    expect(result.auth).toBe("session");
+    expect(result.username).toBe("admin");
     expect(result.server).toBe(BASE_URL);
     expect(result.endpoint).toBe(ENDPOINT);
     expect(result.project).toEqual({ name: "Payments", id: 9 });
@@ -82,7 +88,7 @@ describe("KiwiClient.cases.create", () => {
       "TestCase.add_tag": () => true,
     });
 
-    const client = new KiwiClient({ url: BASE_URL, token: "tok", project: "Core" });
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
     const result = await client.cases.create({
       summary: "Login",
       category: "API",

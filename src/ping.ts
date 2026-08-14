@@ -5,7 +5,8 @@ export interface PingResult {
   elapsed_ms: number;
   server: string;
   endpoint: string;
-  auth: "Token";
+  auth: "session";
+  username: string;
   project: { name: string; id: number } | null;
   products_total: number;
 }
@@ -23,7 +24,8 @@ export async function ping(rpc: KiwiRpcClient): Promise<PingResult> {
     elapsed_ms: Date.now() - started,
     server: rpc.baseUrl,
     endpoint: rpc.endpoint,
-    auth: "Token",
+    auth: "session",
+    username: rpc.username,
     project,
     products_total: products?.length ?? 0,
   };

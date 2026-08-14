@@ -2,6 +2,8 @@
 
 Переиспользуемый TypeScript-клиент к JSON-RPC API [Kiwi TCMS](https://kiwitcms.org).
 
+Аутентификация как в официальном [tcms-api](https://tcms-api.readthedocs.io/en/latest/modules/tcms_api.html): `Auth.login(username, password)`, дальше сессия в cookie `sessionid`.
+
 ## Установка
 
 ```bash
@@ -24,7 +26,8 @@ import { KiwiClient } from "@kiwi-tcms-ai/kiwi-tcms-client";
 
 const client = new KiwiClient({
   url: "https://tcms.example.com",
-  token: process.env.KIWI_TOKEN!,
+  username: process.env.KIWI_USERNAME!,
+  password: process.env.KIWI_PASSWORD!,
   project: "Payments",
   timeoutMs: 30_000,
 });
