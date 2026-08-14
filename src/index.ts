@@ -1,6 +1,7 @@
 export * from "./attachments.js";
 export * from "./builds.js";
 export * from "./case-statuses.js";
+export * from "./case-text.js";
 export * from "./cases.js";
 export * from "./categories.js";
 export * from "./classifications.js";

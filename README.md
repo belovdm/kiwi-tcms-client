@@ -40,6 +40,9 @@ const created = await client.cases.create({
   summary: "Login works",
   plan: 12,
   tags: "smoke,auth",
+  setup: "The shopper is signed in.",
+  actions: "1. Open checkout",
+  expected: "The payment form is visible",
 });
 await client.cases.addComponent(created.created as never, "Auth");
 await client.executions.addLink({
