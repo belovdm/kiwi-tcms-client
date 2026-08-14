@@ -54,17 +54,17 @@ const status = await client.runs.status(44);
 `KiwiClient` группирует вызовы по сущностям, как `TestyClient`:
 
 ```ts
-client.projects.list / create
-client.versions.list / create
-client.builds.list / create
-client.planTypes / caseStatuses / executionStatuses / users / tags
-client.plans.list / create / update / addCase / removeCase / tree / attachments
-client.cases.search / get / create / update / addTag / addComponent / attachments / properties
-client.runs.list / create / update / addCases / getCases / status / properties
-client.executions.list / update / addLink / getLinks / attachments / properties
-client.attachments.remove(id)
-client.ping()
-client.call("Bug.filter", [{}])
+client.projects.list / create;
+client.versions.list / create;
+client.builds.list / create;
+client.planTypes / caseStatuses / executionStatuses / users / tags;
+client.plans.list / create / update / addCase / removeCase / tree / attachments;
+client.cases.search / get / create / update / addTag / addComponent / attachments / properties;
+client.runs.list / create / update / addCases / getCases / status / properties;
+client.executions.list / update / addLink / getLinks / attachments / properties;
+client.attachments.remove(id);
+client.ping();
+client.call("Bug.filter", [{}]);
 ```
 
 Низкоуровневый транспорт — `KiwiRpcClient`. Хелперы `extractId`, `extractName` и `firstId` нормализуют сериализацию Kiwi.

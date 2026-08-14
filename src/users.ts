@@ -5,7 +5,10 @@ export interface ListUsersParams extends ListLimit {
   query?: string;
 }
 
-export async function listUsers(rpc: KiwiRpcClient, params: ListUsersParams = {}): Promise<PageResult> {
+export async function listUsers(
+  rpc: KiwiRpcClient,
+  params: ListUsersParams = {},
+): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.username__icontains = params.query;
   const rows = await rpc.call<unknown[]>("User.filter", [q]);

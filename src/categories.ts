@@ -7,7 +7,7 @@ export interface ListCategoriesParams extends ListLimit {
 
 export async function listCategories(
   rpc: KiwiRpcClient,
-  params: ListCategoriesParams = {}
+  params: ListCategoriesParams = {},
 ): Promise<PageResult> {
   const pid = params.product
     ? await rpc.resolveProductId(params.product)

@@ -7,7 +7,10 @@ function asNumericId(nameOrId: string | number): number | undefined {
   return undefined;
 }
 
-export async function userIdByName(rpc: KiwiRpcClient, usernameOrId: string | number): Promise<number> {
+export async function userIdByName(
+  rpc: KiwiRpcClient,
+  usernameOrId: string | number,
+): Promise<number> {
   const numeric = asNumericId(usernameOrId);
   if (numeric !== undefined) return numeric;
   const rows = await rpc.call<unknown[]>("User.filter", [{ username: String(usernameOrId) }]);
@@ -19,7 +22,7 @@ export async function userIdByName(rpc: KiwiRpcClient, usernameOrId: string | nu
 export async function buildIdByName(
   rpc: KiwiRpcClient,
   nameOrId: string | number,
-  productId?: number
+  productId?: number,
 ): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
@@ -29,14 +32,16 @@ export async function buildIdByName(
   const rows = await rpc.call<unknown[]>("Build.filter", [q]);
   const id = firstId(rows);
   if (id === undefined)
-    throw new Error(`Сборка "${nameOrId}" не найдена (Build.filter). Укажите build_id или создайте сборку.`);
+    throw new Error(
+      `Сборка "${nameOrId}" не найдена (Build.filter). Укажите build_id или создайте сборку.`,
+    );
   return id;
 }
 
 export async function categoryIdByName(
   rpc: KiwiRpcClient,
   nameOrId: string | number,
-  productId: number
+  productId: number,
 ): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
@@ -49,17 +54,25 @@ export async function categoryIdByName(
   return id;
 }
 
-export async function priorityIdByName(rpc: KiwiRpcClient, nameOrId: string | number): Promise<number> {
+export async function priorityIdByName(
+  rpc: KiwiRpcClient,
+  nameOrId: string | number,
+): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
   const rows = await rpc.call<unknown[]>("Priority.filter", [{ value: String(nameOrId) }]);
   const id = firstId(rows);
   if (id === undefined)
-    throw new Error(`Приоритет "${nameOrId}" не найден (Priority.filter). Примеры: P1..P5, Critical, Medium.`);
+    throw new Error(
+      `Приоритет "${nameOrId}" не найден (Priority.filter). Примеры: P1..P5, Critical, Medium.`,
+    );
   return id;
 }
 
-export async function planTypeIdByName(rpc: KiwiRpcClient, nameOrId: string | number): Promise<number> {
+export async function planTypeIdByName(
+  rpc: KiwiRpcClient,
+  nameOrId: string | number,
+): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
   const rows = await rpc.call<unknown[]>("PlanType.filter", [{ name: String(nameOrId) }]);
@@ -68,19 +81,23 @@ export async function planTypeIdByName(rpc: KiwiRpcClient, nameOrId: string | nu
   return id;
 }
 
-export async function classificationIdByName(rpc: KiwiRpcClient, nameOrId: string | number): Promise<number> {
+export async function classificationIdByName(
+  rpc: KiwiRpcClient,
+  nameOrId: string | number,
+): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
   const rows = await rpc.call<unknown[]>("Classification.filter", [{ name: String(nameOrId) }]);
   const id = firstId(rows);
-  if (id === undefined) throw new Error(`Классификация "${nameOrId}" не найдена (Classification.filter)`);
+  if (id === undefined)
+    throw new Error(`Классификация "${nameOrId}" не найдена (Classification.filter)`);
   return id;
 }
 
 export async function versionIdByName(
   rpc: KiwiRpcClient,
   nameOrId: string | number,
-  productId?: number
+  productId?: number,
 ): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
@@ -89,7 +106,9 @@ export async function versionIdByName(
   const rows = await rpc.call<unknown[]>("Version.filter", [q]);
   const id = firstId(rows);
   if (id === undefined)
-    throw new Error(`Версия "${nameOrId}" не найдена (Version.filter). Создайте её через Version.create.`);
+    throw new Error(
+      `Версия "${nameOrId}" не найдена (Version.filter). Создайте её через Version.create.`,
+    );
   return id;
 }
 
@@ -107,19 +126,29 @@ export async function caseStatusIdByName(rpc: KiwiRpcClient, name: string): Prom
   const id = first ? extractId(first.status_id ?? first.status) : undefined;
   if (id === undefined)
     throw new Error(
-      `Статус тест-кейса "${name}" не найден (TestCaseStatus.filter). Передайте числовой status_id.`
+      `Статус тест-кейса "${name}" не найден (TestCaseStatus.filter). Передайте числовой status_id.`,
     );
   return id;
 }
 
-export async function execStatusIdByName(rpc: KiwiRpcClient, name: string, runId?: number): Promise<number> {
+export async function execStatusIdByName(
+  rpc: KiwiRpcClient,
+  name: string,
+  runId?: number,
+): Promise<number> {
   const numeric = asNumericId(name);
   if (numeric !== undefined) return numeric;
   const wanted = name.trim().toLowerCase();
 
-  const catalog = await rpc.call<{ name?: unknown; value?: unknown }[]>("TestExecutionStatus.filter", [{}]);
+  const catalog = await rpc.call<{ name?: unknown; value?: unknown }[]>(
+    "TestExecutionStatus.filter",
+    [{}],
+  );
   const fromCatalog = (catalog ?? []).find((r) => {
-    const n = extractName(r.name) ?? extractName(r.value) ?? (typeof r.name === "string" ? r.name : undefined);
+    const n =
+      extractName(r.name) ??
+      extractName(r.value) ??
+      (typeof r.name === "string" ? r.name : undefined);
     return typeof n === "string" && n.toLowerCase() === wanted;
   });
   const catalogId = fromCatalog ? firstId([fromCatalog]) : undefined;
@@ -130,7 +159,7 @@ export async function execStatusIdByName(rpc: KiwiRpcClient, name: string, runId
 
   const rows = await rpc.call<{ status?: unknown; status_id?: unknown; status__name?: unknown }[]>(
     "TestExecution.filter",
-    [{ run: runId }]
+    [{ run: runId }],
   );
   const hit = (rows ?? []).find((r) => {
     const n = r.status__name ?? extractName(r.status);
@@ -139,12 +168,12 @@ export async function execStatusIdByName(rpc: KiwiRpcClient, name: string, runId
   const id = hit ? extractId(hit.status_id ?? hit.status) : undefined;
   if (id === undefined) {
     const available = Array.from(
-      new Set((rows ?? []).map((r) => r.status__name ?? extractName(r.status)).filter(Boolean))
+      new Set((rows ?? []).map((r) => r.status__name ?? extractName(r.status)).filter(Boolean)),
     ).join(", ");
     throw new Error(
       `Статус исполнения "${name}" не найден в ране ${runId}. ` +
         (available ? `Доступные: ${available}.` : "") +
-        ` Либо передайте числовой status_id.`
+        ` Либо передайте числовой status_id.`,
     );
   }
   return id;

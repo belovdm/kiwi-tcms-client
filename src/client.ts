@@ -67,9 +67,7 @@ function readSetCookies(headers: Headers): string[] {
     typeof headers.getSetCookie === "function"
       ? headers.getSetCookie()
       : headerValues(headers, "set-cookie");
-  return raw
-    .map((h) => h.split(";", 1)[0]?.trim() ?? "")
-    .filter((c) => c.includes("="));
+  return raw.map((h) => h.split(";", 1)[0]?.trim() ?? "").filter((c) => c.includes("="));
 }
 
 function headerValues(headers: Headers, name: string): string[] {
@@ -109,7 +107,7 @@ export class KiwiRpcClient {
   /** Произвольный вызов JSON-RPC метода Kiwi TCMS. */
   async call<T = unknown>(
     method: string,
-    params: unknown[] | Record<string, unknown> = []
+    params: unknown[] | Record<string, unknown> = [],
   ): Promise<T> {
     const isLogin = method === "Auth.login";
     if (!isLogin) await this.ensureSession();
@@ -128,15 +126,15 @@ export class KiwiRpcClient {
   private async authenticate(): Promise<void> {
     this.sessionId = null;
     this.cookies = [];
+    // post() already calls applySession() for a successful Auth.login response
+    // (see the `method === "Auth.login"` branch below); this call only validates
+    // that we actually ended up with a session.
     const session = await this.post<unknown>("Auth.login", [this.username, this.password], {
       retryOnAuthFailure: false,
     });
-    if (typeof session !== "string" || session.trim() === "") {
-      throw new Error(
-        "Auth.login не вернул session id. Проверьте KIWI_USERNAME / KIWI_PASSWORD."
-      );
+    if (typeof session !== "string" || session.trim() === "" || this.sessionId !== session) {
+      throw new Error("Auth.login не вернул session id. Проверьте KIWI_USERNAME / KIWI_PASSWORD.");
     }
-    this.applySession(session, this.cookies);
   }
 
   private applySession(sessionId: string, cookies: string[]): void {
@@ -158,7 +156,7 @@ export class KiwiRpcClient {
   private async post<T>(
     method: string,
     params: unknown[] | Record<string, unknown>,
-    opts: { retryOnAuthFailure: boolean }
+    opts: { retryOnAuthFailure: boolean },
   ): Promise<T> {
     const payload = { jsonrpc: "2.0", id: this.nextId++, method, params };
 
@@ -189,12 +187,10 @@ export class KiwiRpcClient {
       if ((err as Error).name === "AbortError") {
         throw new Error(
           `Таймаут ${this.timeoutMs} мс при вызове ${method} (${this.endpoint}). ` +
-            `Увеличьте KIWI_TIMEOUT или проверьте доступность сервера.`
+            `Увеличьте KIWI_TIMEOUT или проверьте доступность сервера.`,
         );
       }
-      throw new Error(
-        `Сетевая ошибка при обращении к ${this.url}: ${(err as Error).message}`
-      );
+      throw new Error(`Сетевая ошибка при обращении к ${this.url}: ${(err as Error).message}`);
     }
     clearTimeout(timer);
 
@@ -213,13 +209,13 @@ export class KiwiRpcClient {
           return this.post<T>(method, params, { retryOnAuthFailure: false });
         }
         throw new Error(
-          `Аутентификация не удалась (HTTP ${res.status}). Проверьте KIWI_USERNAME / KIWI_PASSWORD.`
+          `Аутентификация не удалась (HTTP ${res.status}). Проверьте KIWI_USERNAME / KIWI_PASSWORD.`,
         );
       }
       if (res.status === 404) {
         throw new Error(
           `HTTP 404: endpoint ${this.endpoint} не найден. Проверьте KIWI_URL ` +
-            `(нужен базовый URL инстанса, без пути /json-rpc/).`
+            `(нужен базовый URL инстанса, без пути /json-rpc/).`,
         );
       }
       throw new Error(`HTTP ${res.status} при вызове ${method}: ${raw.slice(0, 300)}`);
@@ -238,7 +234,7 @@ export class KiwiRpcClient {
         throw new KiwiRpcError(
           `Auth.login: ${message}. Проверьте KIWI_USERNAME / KIWI_PASSWORD.`,
           json.error.code ?? -1,
-          json.error.data
+          json.error.data,
         );
       }
       throw new KiwiRpcError(`${method}: ${message}`, json.error.code ?? -1, json.error.data);
@@ -264,10 +260,10 @@ export class KiwiRpcClient {
     this.cookies = [...byName.values()];
   }
 
-  /** Ограничить список строк и вернуть вместе с общим числом. */
+  /** Ограничить список строк и вернуть вместе с общим числом. limit=0 → пустой список. */
   page<T>(rows: T[] | undefined, limit: number): PageResult<T> {
     const all = Array.isArray(rows) ? rows : [];
-    const rowsOut = all.slice(0, Math.max(1, limit));
+    const rowsOut = all.slice(0, Math.max(0, limit));
     return { total: all.length, shown: rowsOut.length, rows: rowsOut };
   }
 
@@ -294,7 +290,7 @@ export class KiwiRpcClient {
     if (!this.project) {
       throw new Error(
         `KIWI_PROJECT не задан, поэтому укажите product/plan явно. ` +
-          `Список проектов: инструмент kiwi_list_projects.`
+          `Список проектов: инструмент kiwi_list_projects.`,
       );
     }
     return this.resolveProductId(this.project);
@@ -335,7 +331,9 @@ export class KiwiClient {
     return this.rpc.projectProductId();
   }
 
-  private bind<T extends (client: KiwiRpcClient, ...args: never[]) => unknown>(fn: T): BoundApiFunction<T> {
+  private bind<T extends (client: KiwiRpcClient, ...args: never[]) => unknown>(
+    fn: T,
+  ): BoundApiFunction<T> {
     return ((...args: unknown[]) => fn(this.rpc, ...(args as never[]))) as BoundApiFunction<T>;
   }
 

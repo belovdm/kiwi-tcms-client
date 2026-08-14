@@ -39,7 +39,10 @@ export interface RunStatus {
   failed: unknown[];
 }
 
-export async function listRuns(rpc: KiwiRpcClient, params: ListRunsParams = {}): Promise<PageResult> {
+export async function listRuns(
+  rpc: KiwiRpcClient,
+  params: ListRunsParams = {},
+): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.summary__icontains = params.query;
   if (params.plan) q.plan = params.plan;
@@ -53,7 +56,11 @@ export async function listRuns(rpc: KiwiRpcClient, params: ListRunsParams = {}):
 
 export async function createRun(rpc: KiwiRpcClient, input: CreateRunInput): Promise<unknown> {
   const buildId = await buildIdByName(rpc, input.build);
-  const values: Record<string, unknown> = { plan: input.plan, build: buildId, summary: input.summary };
+  const values: Record<string, unknown> = {
+    plan: input.plan,
+    build: buildId,
+    summary: input.summary,
+  };
   if (input.notes) values.notes = input.notes;
   if (input.manager) values.manager = await userIdByName(rpc, input.manager);
   if (input.default_tester) values.default_tester = await userIdByName(rpc, input.default_tester);
@@ -63,7 +70,7 @@ export async function createRun(rpc: KiwiRpcClient, input: CreateRunInput): Prom
 export async function addCasesToRun(
   rpc: KiwiRpcClient,
   runId: number,
-  caseIds: string
+  caseIds: string,
 ): Promise<AddCasesToRunResult> {
   const ids = caseIds
     .split(",")
@@ -83,19 +90,30 @@ export async function addCasesToRun(
 }
 
 export async function getRunStatus(rpc: KiwiRpcClient, runId: number): Promise<RunStatus> {
-  const runs = await rpc.call<{ id?: number; summary?: string }[]>("TestRun.filter", [{ id: runId }]);
+  const runs = await rpc.call<{ id?: number; summary?: string }[]>("TestRun.filter", [
+    { id: runId },
+  ]);
   const run = runs?.[0];
   if (!run) throw new Error(`Тест-ран ${runId} не найден`);
 
   const execs = await rpc.call<
-    { status?: unknown; status_id?: unknown; status__name?: unknown; case?: unknown; summary?: unknown; assignee?: unknown }[]
+    {
+      status?: unknown;
+      status_id?: unknown;
+      status__name?: unknown;
+      case?: unknown;
+      summary?: unknown;
+      assignee?: unknown;
+    }[]
   >("TestExecution.filter", [{ run: runId }]);
 
   const byStatus: Record<string, number> = {};
   const failed: unknown[] = [];
   for (const ex of execs ?? []) {
     const name = String(
-      ex.status__name ?? extractName(ex.status) ?? `#${extractId(ex.status_id ?? ex.status) ?? "?"}`
+      ex.status__name ??
+        extractName(ex.status) ??
+        `#${extractId(ex.status_id ?? ex.status) ?? "?"}`,
     );
     byStatus[name] = (byStatus[name] ?? 0) + 1;
     const lower = name.toLowerCase();
@@ -130,7 +148,8 @@ export async function updateRun(rpc: KiwiRpcClient, input: UpdateRunInput): Prom
   if (input.build) values.build = await buildIdByName(rpc, input.build);
   if (input.manager) values.manager = await userIdByName(rpc, input.manager);
   if (input.default_tester) values.default_tester = await userIdByName(rpc, input.default_tester);
-  if (Object.keys(values).length === 0) throw new Error("Не передано ни одного поля для обновления");
+  if (Object.keys(values).length === 0)
+    throw new Error("Не передано ни одного поля для обновления");
   return rpc.call("TestRun.update", [input.id, values]);
 }
 
@@ -143,7 +162,11 @@ export async function addRunTag(rpc: KiwiRpcClient, runId: number, tag: string):
   return rpc.call("TestRun.add_tag", [runId, tag]);
 }
 
-export async function removeRunTag(rpc: KiwiRpcClient, runId: number, tag: string): Promise<unknown> {
+export async function removeRunTag(
+  rpc: KiwiRpcClient,
+  runId: number,
+  tag: string,
+): Promise<unknown> {
   return rpc.call("TestRun.remove_tag", [runId, tag]);
 }
 
@@ -154,7 +177,7 @@ export async function listRunAttachments(rpc: KiwiRpcClient, runId: number): Pro
 export async function addRunAttachment(
   rpc: KiwiRpcClient,
   runId: number,
-  input: AddAttachmentInput
+  input: AddAttachmentInput,
 ): Promise<unknown> {
   return addObjectAttachment(rpc, "TestRun.add_attachment", runId, input);
 }
@@ -170,7 +193,7 @@ export async function addRunProperty(
   rpc: KiwiRpcClient,
   runId: number,
   name: string,
-  value: string
+  value: string,
 ): Promise<unknown> {
   return rpc.call("TestRun.add_property", [runId, name, value]);
 }

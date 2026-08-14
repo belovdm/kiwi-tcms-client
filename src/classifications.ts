@@ -7,7 +7,7 @@ export interface ListClassificationsParams extends ListLimit {
 
 export async function listClassifications(
   rpc: KiwiRpcClient,
-  params: ListClassificationsParams = {}
+  params: ListClassificationsParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.name__icontains = params.query;

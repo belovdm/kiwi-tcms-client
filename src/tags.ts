@@ -5,7 +5,10 @@ export interface ListTagsParams extends ListLimit {
   query?: string;
 }
 
-export async function listTags(rpc: KiwiRpcClient, params: ListTagsParams = {}): Promise<PageResult> {
+export async function listTags(
+  rpc: KiwiRpcClient,
+  params: ListTagsParams = {},
+): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.name__icontains = params.query;
   const rows = await rpc.call<unknown[]>("Tag.filter", [q]);

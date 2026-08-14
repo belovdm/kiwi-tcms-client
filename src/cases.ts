@@ -63,7 +63,7 @@ export interface UpdateCaseInput {
 
 export async function searchCases(
   rpc: KiwiRpcClient,
-  params: SearchCasesParams = {}
+  params: SearchCasesParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.summary__icontains = params.query;
@@ -89,7 +89,7 @@ export async function searchCases(
 
 export async function getCase(
   rpc: KiwiRpcClient,
-  params: GetCaseParams
+  params: GetCaseParams,
 ): Promise<{ case: unknown; executions?: PageResult }> {
   const rows = await rpc.call<unknown[]>("TestCase.filter", [{ id: params.id }]);
   const testCase = rows?.[0];
@@ -104,7 +104,7 @@ export async function getCase(
 
 export async function createCase(
   rpc: KiwiRpcClient,
-  input: CreateCaseInput
+  input: CreateCaseInput,
 ): Promise<{ created: unknown; actions: string[] }> {
   const pid = input.product
     ? await rpc.resolveProductId(input.product)
@@ -116,7 +116,8 @@ export async function createCase(
   } else {
     const cats = await rpc.call<unknown[]>("Category.filter", [{ product: pid }]);
     const first = firstId(cats);
-    if (first === undefined) throw new Error(`В продукте ${pid} нет категорий — создайте категорию в Kiwi TCMS`);
+    if (first === undefined)
+      throw new Error(`В продукте ${pid} нет категорий — создайте категорию в Kiwi TCMS`);
     categoryId = first;
   }
 
@@ -154,7 +155,10 @@ export async function createCase(
     attached.push(`привязан к плану ${input.plan}`);
   }
   if (input.tags && newId) {
-    for (const tag of input.tags.split(",").map((t) => t.trim()).filter(Boolean)) {
+    for (const tag of input.tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)) {
       await rpc.call("TestCase.add_tag", [newId, tag]);
       attached.push(`тег: ${tag}`);
     }
@@ -184,40 +188,57 @@ export async function updateCase(rpc: KiwiRpcClient, input: UpdateCaseInput): Pr
     values.category = await categoryIdByName(rpc, input.category, pid ?? 0);
   }
 
-  if (Object.keys(values).length === 0) throw new Error("Не передано ни одного поля для обновления");
+  if (Object.keys(values).length === 0)
+    throw new Error("Не передано ни одного поля для обновления");
 
   return rpc.call("TestCase.update", [input.id, values]);
 }
 
-export async function addCaseComment(rpc: KiwiRpcClient, id: number, comment: string): Promise<unknown> {
+export async function addCaseComment(
+  rpc: KiwiRpcClient,
+  id: number,
+  comment: string,
+): Promise<unknown> {
   return rpc.call("TestCase.add_comment", [id, comment]);
 }
 
 export async function getCaseHistory(
   rpc: KiwiRpcClient,
   id: number,
-  params: ListLimit = {}
+  params: ListLimit = {},
 ): Promise<PageResult> {
   const rows = await rpc.call<unknown[]>("TestCase.history", [id]);
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
-export async function addCaseTag(rpc: KiwiRpcClient, caseId: number, tag: string): Promise<unknown> {
+export async function addCaseTag(
+  rpc: KiwiRpcClient,
+  caseId: number,
+  tag: string,
+): Promise<unknown> {
   return rpc.call("TestCase.add_tag", [caseId, tag]);
 }
 
-export async function removeCaseTag(rpc: KiwiRpcClient, caseId: number, tag: string): Promise<unknown> {
+export async function removeCaseTag(
+  rpc: KiwiRpcClient,
+  caseId: number,
+  tag: string,
+): Promise<unknown> {
   return rpc.call("TestCase.remove_tag", [caseId, tag]);
 }
 
-export async function addCaseComponent(rpc: KiwiRpcClient, caseId: number, component: string): Promise<unknown> {
+export async function addCaseComponent(
+  rpc: KiwiRpcClient,
+  caseId: number,
+  component: string,
+): Promise<unknown> {
   return rpc.call("TestCase.add_component", [caseId, component]);
 }
 
 export async function removeCaseComponent(
   rpc: KiwiRpcClient,
   caseId: number,
-  componentId: number
+  componentId: number,
 ): Promise<unknown> {
   return rpc.call("TestCase.remove_component", [caseId, componentId]);
 }
@@ -229,15 +250,12 @@ export async function listCaseAttachments(rpc: KiwiRpcClient, caseId: number): P
 export async function addCaseAttachment(
   rpc: KiwiRpcClient,
   caseId: number,
-  input: AddAttachmentInput
+  input: AddAttachmentInput,
 ): Promise<unknown> {
   return addObjectAttachment(rpc, "TestCase.add_attachment", caseId, input);
 }
 
-export async function listCaseProperties(
-  rpc: KiwiRpcClient,
-  caseId?: number
-): Promise<unknown[]> {
+export async function listCaseProperties(rpc: KiwiRpcClient, caseId?: number): Promise<unknown[]> {
   const q: Record<string, unknown> = {};
   if (caseId !== undefined) q.case = caseId;
   const rows = await rpc.call<unknown[]>("TestCase.properties", [q]);
@@ -248,14 +266,14 @@ export async function addCaseProperty(
   rpc: KiwiRpcClient,
   caseId: number,
   name: string,
-  value: string
+  value: string,
 ): Promise<unknown> {
   return rpc.call("TestCase.add_property", [caseId, name, value]);
 }
 
 export async function removeCaseProperty(
   rpc: KiwiRpcClient,
-  query: Record<string, unknown>
+  query: Record<string, unknown>,
 ): Promise<unknown> {
   return rpc.call("TestCase.remove_property", [query]);
 }

@@ -7,7 +7,7 @@ export interface ListExecutionStatusesParams extends ListLimit {
 
 export async function listExecutionStatuses(
   rpc: KiwiRpcClient,
-  params: ListExecutionStatusesParams = {}
+  params: ListExecutionStatusesParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.name__icontains = params.query;

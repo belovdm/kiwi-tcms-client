@@ -10,7 +10,7 @@ export async function addObjectAttachment(
   rpc: KiwiRpcClient,
   method: string,
   objectId: number,
-  input: AddAttachmentInput
+  input: AddAttachmentInput,
 ): Promise<unknown> {
   return rpc.call(method, [objectId, input.filename, input.b64content]);
 }
@@ -18,7 +18,7 @@ export async function addObjectAttachment(
 export async function listObjectAttachments(
   rpc: KiwiRpcClient,
   method: string,
-  objectId: number
+  objectId: number,
 ): Promise<unknown[]> {
   const rows = await rpc.call<unknown[]>(method, [objectId]);
   return rows ?? [];

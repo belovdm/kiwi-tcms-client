@@ -9,7 +9,7 @@ export interface ListProjectsParams extends ListLimit {
 
 export async function listProjects(
   rpc: KiwiRpcClient,
-  params: ListProjectsParams = {}
+  params: ListProjectsParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = params.query ? { name__icontains: params.query } : {};
   const rows = await rpc.call<unknown[]>("Product.filter", [q]);
@@ -22,7 +22,10 @@ export interface CreateProjectInput {
   description?: string;
 }
 
-export async function createProject(rpc: KiwiRpcClient, input: CreateProjectInput): Promise<unknown> {
+export async function createProject(
+  rpc: KiwiRpcClient,
+  input: CreateProjectInput,
+): Promise<unknown> {
   let classification: number;
   if (input.classification) {
     classification = await classificationIdByName(rpc, input.classification);
@@ -30,7 +33,9 @@ export async function createProject(rpc: KiwiRpcClient, input: CreateProjectInpu
     const rows = await rpc.call<unknown[]>("Classification.filter", [{}]);
     const id = firstId(rows);
     if (id === undefined)
-      throw new Error("В Kiwi нет Classification — укажите classification или создайте её в админке.");
+      throw new Error(
+        "В Kiwi нет Classification — укажите classification или создайте её в админке.",
+      );
     classification = id;
   }
   const values: Record<string, unknown> = { name: input.name, classification };

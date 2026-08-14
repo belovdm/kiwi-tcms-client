@@ -1,6 +1,6 @@
 {
   "name": "@kiwi-tcms-ai/kiwi-tcms-client",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Reusable TypeScript client for the Kiwi TCMS JSON-RPC API",
   "license": "MIT",
   "author": "Belov <belov.u30gt@gmail.com>",
@@ -103,6 +103,9 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.typecheck.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepublishOnly": "npm test && npm run build"
   },
   "engines": {
@@ -112,9 +115,14 @@
     "access": "public"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.10.0",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
     "msw": "^2.3.1",
+    "prettier": "^3.9.6",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.67.0",
     "vitest": "^2.0.5"
   }
 }

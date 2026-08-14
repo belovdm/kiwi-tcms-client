@@ -28,7 +28,7 @@ export interface UpdateExecutionInput {
 
 export async function listExecutions(
   rpc: KiwiRpcClient,
-  params: ListExecutionsParams = {}
+  params: ListExecutionsParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.run) q.run = params.run;
@@ -41,7 +41,7 @@ export async function listExecutions(
 
 export async function updateExecution(
   rpc: KiwiRpcClient,
-  input: UpdateExecutionInput
+  input: UpdateExecutionInput,
 ): Promise<{ updated: unknown; comment: unknown }> {
   const values: Record<string, unknown> = {};
 
@@ -53,7 +53,9 @@ export async function updateExecution(
   if (input.status_id) {
     values.status = input.status_id;
   } else if (input.status) {
-    const execs = await rpc.call<{ run?: unknown }[]>("TestExecution.filter", [{ id: input.execution_id }]);
+    const execs = await rpc.call<{ run?: unknown }[]>("TestExecution.filter", [
+      { id: input.execution_id },
+    ]);
     const runId = execs?.[0] ? extractId(execs[0].run) : undefined;
     if (runId === undefined) throw new Error(`Исполнение ${input.execution_id} не найдено`);
     values.status = await execStatusIdByName(rpc, input.status, runId);
@@ -66,7 +68,10 @@ export async function updateExecution(
 
   let commentResult: unknown = null;
   if (input.comment) {
-    commentResult = await rpc.call("TestExecution.add_comment", [input.execution_id, input.comment]);
+    commentResult = await rpc.call("TestExecution.add_comment", [
+      input.execution_id,
+      input.comment,
+    ]);
   }
 
   if (updated === null && commentResult === null)
@@ -83,7 +88,10 @@ export interface AddExecutionLinkInput {
   update_tracker?: boolean;
 }
 
-export async function addExecutionLink(rpc: KiwiRpcClient, input: AddExecutionLinkInput): Promise<unknown> {
+export async function addExecutionLink(
+  rpc: KiwiRpcClient,
+  input: AddExecutionLinkInput,
+): Promise<unknown> {
   const values: Record<string, unknown> = {
     execution: input.execution_id,
     name: input.name,
@@ -93,33 +101,39 @@ export async function addExecutionLink(rpc: KiwiRpcClient, input: AddExecutionLi
   return rpc.call("TestExecution.add_link", [values, input.update_tracker ?? false]);
 }
 
-export async function getExecutionLinks(rpc: KiwiRpcClient, executionId: number): Promise<unknown[]> {
+export async function getExecutionLinks(
+  rpc: KiwiRpcClient,
+  executionId: number,
+): Promise<unknown[]> {
   const rows = await rpc.call<unknown[]>("TestExecution.get_links", [{ execution: executionId }]);
   return rows ?? [];
 }
 
 export async function removeExecutionLink(
   rpc: KiwiRpcClient,
-  query: Record<string, unknown>
+  query: Record<string, unknown>,
 ): Promise<unknown> {
   return rpc.call("TestExecution.remove_link", [query]);
 }
 
-export async function listExecutionAttachments(rpc: KiwiRpcClient, executionId: number): Promise<unknown[]> {
+export async function listExecutionAttachments(
+  rpc: KiwiRpcClient,
+  executionId: number,
+): Promise<unknown[]> {
   return listObjectAttachments(rpc, "TestExecution.list_attachments", executionId);
 }
 
 export async function addExecutionAttachment(
   rpc: KiwiRpcClient,
   executionId: number,
-  input: AddAttachmentInput
+  input: AddAttachmentInput,
 ): Promise<unknown> {
   return addObjectAttachment(rpc, "TestExecution.add_attachment", executionId, input);
 }
 
 export async function listExecutionProperties(
   rpc: KiwiRpcClient,
-  executionId?: number
+  executionId?: number,
 ): Promise<unknown[]> {
   const q: Record<string, unknown> = {};
   if (executionId !== undefined) q.execution = executionId;
@@ -131,7 +145,7 @@ export async function addExecutionProperty(
   rpc: KiwiRpcClient,
   executionId: number,
   name: string,
-  value: string
+  value: string,
 ): Promise<unknown> {
   return rpc.call("TestExecution.add_property", [executionId, name, value]);
 }

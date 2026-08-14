@@ -8,7 +8,10 @@ export interface ListBuildsParams extends ListLimit {
   query?: string;
 }
 
-export async function listBuilds(rpc: KiwiRpcClient, params: ListBuildsParams = {}): Promise<PageResult> {
+export async function listBuilds(
+  rpc: KiwiRpcClient,
+  params: ListBuildsParams = {},
+): Promise<PageResult> {
   const pid = params.product
     ? await rpc.resolveProductId(params.product)
     : await rpc.projectProductId();

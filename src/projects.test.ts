@@ -20,7 +20,11 @@ function rpcByMethod(handlers: Record<string, (params: unknown) => unknown>) {
         return HttpResponse.json({ jsonrpc: "2.0", id: body.id, result: "sess-test" });
       }
       const fn = handlers[body.method];
-      if (!fn) return HttpResponse.json({ jsonrpc: "2.0", id: body.id, error: { message: body.method } }, { status: 200 });
+      if (!fn)
+        return HttpResponse.json(
+          { jsonrpc: "2.0", id: body.id, error: { message: body.method } },
+          { status: 200 },
+        );
       return HttpResponse.json({ jsonrpc: "2.0", id: body.id, result: fn(body.params) });
     }),
   );

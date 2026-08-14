@@ -127,7 +127,9 @@ describe("plans / executions / attachments", () => {
       { execution: 8, name: "JIRA-1", url: "https://jira/1", is_defect: true },
       false,
     ]);
-    await expect(client.executions.getLinks(8)).resolves.toEqual([{ id: 1, url: "https://jira/1" }]);
+    await expect(client.executions.getLinks(8)).resolves.toEqual([
+      { id: 1, url: "https://jira/1" },
+    ]);
   });
 
   it("uploads and removes attachments", async () => {
@@ -139,9 +141,11 @@ describe("plans / executions / attachments", () => {
 
     const client = new KiwiClient(AUTH);
     await expect(
-      client.cases.addAttachment(3, { filename: "log.txt", b64content: "ZGF0YQ==" })
+      client.cases.addAttachment(3, { filename: "log.txt", b64content: "ZGF0YQ==" }),
     ).resolves.toEqual([3, "log.txt", "ZGF0YQ=="]);
-    await expect(client.cases.listAttachments(3)).resolves.toEqual([{ id: 15, filename: "log.txt" }]);
+    await expect(client.cases.listAttachments(3)).resolves.toEqual([
+      { id: 15, filename: "log.txt" },
+    ]);
     await expect(client.attachments.remove(15)).resolves.toEqual([15]);
   });
 
@@ -157,6 +161,8 @@ describe("plans / executions / attachments", () => {
       "browser",
       "chrome",
     ]);
-    await expect(client.cases.properties(4)).resolves.toEqual([{ name: "browser", value: "chrome" }]);
+    await expect(client.cases.properties(4)).resolves.toEqual([
+      { name: "browser", value: "chrome" },
+    ]);
   });
 });

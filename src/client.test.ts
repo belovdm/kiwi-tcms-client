@@ -44,7 +44,8 @@ describe("KiwiClient.call", () => {
     const logins: unknown[] = [];
     let receivedCookie: string | null = null;
     let receivedAuth: string | null = null;
-    let receivedBody: { jsonrpc?: string; id?: number; method?: string; params?: unknown } | undefined;
+    let receivedBody:
+      { jsonrpc?: string; id?: number; method?: string; params?: unknown } | undefined;
 
     server.use(
       http.post(ENDPOINT, async ({ request }) => {
@@ -126,7 +127,9 @@ describe("KiwiClient.call", () => {
     server.use(http.post(ENDPOINT, () => new HttpResponse("nope", { status: 401 })));
 
     const client = new KiwiClient({ url: BASE_URL, username: "bad", password: "bad" });
-    await expect(client.call("Product.filter")).rejects.toThrow(/Аутентификация не удалась \(HTTP 401\)/);
+    await expect(client.call("Product.filter")).rejects.toThrow(
+      /Аутентификация не удалась \(HTTP 401\)/,
+    );
   });
 
   it("re-logins and retries once when a later call returns 401", async () => {
@@ -162,7 +165,9 @@ describe("KiwiClient.call", () => {
     server.use(withLogin(() => new HttpResponse("gateway exploded", { status: 502 })));
 
     const client = new KiwiClient(AUTH);
-    await expect(client.call("Product.filter")).rejects.toThrow(/HTTP 502 при вызове Product.filter: gateway exploded/);
+    await expect(client.call("Product.filter")).rejects.toThrow(
+      /HTTP 502 при вызове Product.filter: gateway exploded/,
+    );
   });
 
   it("rejects non-JSON success bodies", async () => {
@@ -195,6 +200,10 @@ describe("KiwiClient.page", () => {
   it("treats a missing list as empty", () => {
     expect(client.page(undefined, 5)).toEqual({ total: 0, shown: 0, rows: [] });
   });
+
+  it("returns zero rows for a zero limit", () => {
+    expect(client.page([1, 2, 3], 0)).toEqual({ total: 3, shown: 0, rows: [] });
+  });
 });
 
 describe("KiwiClient.resolveProductId", () => {
@@ -225,15 +234,15 @@ describe("KiwiClient.resolveProductId", () => {
     server.use(withLogin(() => rpcResult([])));
 
     const client = new KiwiClient(AUTH);
-    await expect(client.resolveProductId("Missing")).rejects.toThrow(/Продукт\/проект "Missing" не найден/);
+    await expect(client.resolveProductId("Missing")).rejects.toThrow(
+      /Продукт\/проект "Missing" не найден/,
+    );
   });
 });
 
 describe("KiwiClient.projectProductId", () => {
   it("resolves the configured project name", async () => {
-    server.use(
-      withLogin(({ body }) => rpcResult([{ id: 7, name: "Core" }], body.id)),
-    );
+    server.use(withLogin(({ body }) => rpcResult([{ id: 7, name: "Core" }], body.id)));
 
     const client = new KiwiClient({ ...AUTH, project: "Core" });
     await expect(client.projectProductId()).resolves.toBe(7);

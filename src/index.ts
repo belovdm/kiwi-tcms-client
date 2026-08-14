@@ -17,6 +17,7 @@ export * from "./projects.js";
 export * from "./resolvers.js";
 export * from "./runs.js";
 export * from "./tags.js";
+export * from "./tls.js";
 export * from "./types.js";
 export * from "./users.js";
 export * from "./versions.js";

@@ -12,7 +12,7 @@ export interface CreatePlanTypeInput {
 
 export async function listPlanTypes(
   rpc: KiwiRpcClient,
-  params: ListPlanTypesParams = {}
+  params: ListPlanTypesParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.name__icontains = params.query;
@@ -20,7 +20,10 @@ export async function listPlanTypes(
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
-export async function createPlanType(rpc: KiwiRpcClient, input: CreatePlanTypeInput): Promise<unknown> {
+export async function createPlanType(
+  rpc: KiwiRpcClient,
+  input: CreatePlanTypeInput,
+): Promise<unknown> {
   const values: Record<string, unknown> = { name: input.name };
   if (input.description) values.description = input.description;
   return rpc.call("PlanType.create", [values]);

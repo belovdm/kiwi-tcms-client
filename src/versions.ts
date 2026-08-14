@@ -13,7 +13,7 @@ export interface CreateVersionInput {
 
 export async function listVersions(
   rpc: KiwiRpcClient,
-  params: ListVersionsParams = {}
+  params: ListVersionsParams = {},
 ): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.product) q.product = await rpc.resolveProductId(params.product);
@@ -23,7 +23,10 @@ export async function listVersions(
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
-export async function createVersion(rpc: KiwiRpcClient, input: CreateVersionInput): Promise<unknown> {
+export async function createVersion(
+  rpc: KiwiRpcClient,
+  input: CreateVersionInput,
+): Promise<unknown> {
   const product = input.product
     ? await rpc.resolveProductId(input.product)
     : await rpc.projectProductId();

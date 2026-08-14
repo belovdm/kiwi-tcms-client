@@ -35,7 +35,10 @@ export interface UpdatePlanInput {
   is_active?: boolean;
 }
 
-export async function listPlans(rpc: KiwiRpcClient, params: ListPlansParams = {}): Promise<PageResult> {
+export async function listPlans(
+  rpc: KiwiRpcClient,
+  params: ListPlansParams = {},
+): Promise<PageResult> {
   const q: Record<string, unknown> = {};
   if (params.query) q.name__icontains = params.query;
   if (params.product) q.product = await rpc.resolveProductId(params.product);
@@ -46,7 +49,11 @@ export async function listPlans(rpc: KiwiRpcClient, params: ListPlansParams = {}
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
-async function resolvePlanVersion(rpc: KiwiRpcClient, pid: number, productVersion?: string): Promise<number> {
+async function resolvePlanVersion(
+  rpc: KiwiRpcClient,
+  pid: number,
+  productVersion?: string,
+): Promise<number> {
   if (productVersion) return versionIdByName(rpc, productVersion, pid);
   const rows = await rpc.call<unknown[]>("Version.filter", [{ product: pid }]);
   const id = firstId(rows);
@@ -85,17 +92,19 @@ export async function updatePlan(rpc: KiwiRpcClient, input: UpdatePlanInput): Pr
       : undefined;
   if (input.product) values.product = pid;
   if (input.product_version) {
-    if (pid === undefined) throw new Error("Для product_version по имени нужен product или KIWI_PROJECT");
+    if (pid === undefined)
+      throw new Error("Для product_version по имени нужен product или KIWI_PROJECT");
     values.product_version = await versionIdByName(rpc, input.product_version, pid);
   }
-  if (Object.keys(values).length === 0) throw new Error("Не передано ни одного поля для обновления");
+  if (Object.keys(values).length === 0)
+    throw new Error("Не передано ни одного поля для обновления");
   return rpc.call("TestPlan.update", [input.id, values]);
 }
 
 export async function addCaseToPlan(
   rpc: KiwiRpcClient,
   planId: number,
-  caseId: number
+  caseId: number,
 ): Promise<{ ok: true; plan_id: number; case_id: number }> {
   await rpc.call("TestPlan.add_case", [planId, caseId]);
   return { ok: true, plan_id: planId, case_id: caseId };
@@ -104,7 +113,7 @@ export async function addCaseToPlan(
 export async function removeCaseFromPlan(
   rpc: KiwiRpcClient,
   planId: number,
-  caseId: number
+  caseId: number,
 ): Promise<{ ok: true; plan_id: number; case_id: number }> {
   await rpc.call("TestPlan.remove_case", [planId, caseId]);
   return { ok: true, plan_id: planId, case_id: caseId };
@@ -115,11 +124,19 @@ export async function getPlanTree(rpc: KiwiRpcClient, planId: number): Promise<u
   return rows ?? [];
 }
 
-export async function addPlanTag(rpc: KiwiRpcClient, planId: number, tag: string): Promise<unknown> {
+export async function addPlanTag(
+  rpc: KiwiRpcClient,
+  planId: number,
+  tag: string,
+): Promise<unknown> {
   return rpc.call("TestPlan.add_tag", [planId, tag]);
 }
 
-export async function removePlanTag(rpc: KiwiRpcClient, planId: number, tag: string): Promise<unknown> {
+export async function removePlanTag(
+  rpc: KiwiRpcClient,
+  planId: number,
+  tag: string,
+): Promise<unknown> {
   return rpc.call("TestPlan.remove_tag", [planId, tag]);
 }
 
@@ -127,7 +144,7 @@ export async function updatePlanCaseOrder(
   rpc: KiwiRpcClient,
   planId: number,
   caseId: number,
-  sortkey: number
+  sortkey: number,
 ): Promise<unknown> {
   return rpc.call("TestPlan.update_case_order", [planId, caseId, sortkey]);
 }
@@ -139,7 +156,7 @@ export async function listPlanAttachments(rpc: KiwiRpcClient, planId: number): P
 export async function addPlanAttachment(
   rpc: KiwiRpcClient,
   planId: number,
-  input: AddAttachmentInput
+  input: AddAttachmentInput,
 ): Promise<unknown> {
   return addObjectAttachment(rpc, "TestPlan.add_attachment", planId, input);
 }

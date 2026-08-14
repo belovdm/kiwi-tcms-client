@@ -7,7 +7,7 @@ export interface ListComponentsParams extends ListLimit {
 
 export async function listComponents(
   rpc: KiwiRpcClient,
-  params: ListComponentsParams = {}
+  params: ListComponentsParams = {},
 ): Promise<PageResult> {
   const pid = params.product
     ? await rpc.resolveProductId(params.product)
