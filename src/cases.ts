@@ -134,8 +134,8 @@ export async function createCase(
     product: pid,
     category: categoryId,
     priority: priorityId,
+    case_status: input.status_id ?? (await caseStatusIdByName(rpc, "CONFIRMED")),
   };
-  if (input.status_id) values.status = input.status_id;
   if (input.automated !== undefined) values.is_automated = input.automated;
   if (input.setup) values.setup = input.setup;
   if (input.actions) values.actions = input.actions;
@@ -174,8 +174,8 @@ export async function updateCase(rpc: KiwiRpcClient, input: UpdateCaseInput): Pr
   if (input.script !== undefined) values.script = input.script;
   if (input.arguments !== undefined) values.arguments = input.arguments;
 
-  if (input.status_id) values.status = input.status_id;
-  else if (input.status) values.status = await caseStatusIdByName(rpc, input.status);
+  if (input.status_id) values.case_status = input.status_id;
+  else if (input.status) values.case_status = await caseStatusIdByName(rpc, input.status);
   if (input.priority) values.priority = await priorityIdByName(rpc, input.priority);
   if (input.category) {
     const pid = rpc.project ? await rpc.projectProductId() : undefined;

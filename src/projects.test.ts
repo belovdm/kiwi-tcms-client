@@ -80,6 +80,7 @@ describe("KiwiClient.cases.create", () => {
       "Product.filter": () => [{ id: 5, name: "Core" }],
       "Category.filter": () => [{ id: 11, name: "API" }],
       "Priority.filter": () => [{ id: 3, value: "Medium" }],
+      "TestCaseStatus.filter": () => [{ id: 2, name: "CONFIRMED" }],
       "TestCase.create": (params) => {
         createdCalls.push(params);
         return { id: 77, summary: "Login" };
@@ -97,7 +98,7 @@ describe("KiwiClient.cases.create", () => {
     });
 
     expect(createdCalls[0]).toEqual([
-      { summary: "Login", product: 5, category: 11, priority: 3 },
+      { summary: "Login", product: 5, category: 11, priority: 3, case_status: 2 },
     ]);
     expect(result.created).toEqual({ id: 77, summary: "Login" });
     expect(result.actions).toEqual(["привязан к плану 12", "тег: smoke"]);
