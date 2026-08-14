@@ -2,9 +2,13 @@
 
 Переиспользуемый TypeScript-клиент к JSON-RPC API [Kiwi TCMS](https://kiwitcms.org).
 
-Пакет не публикуется в npm — это соседний локальный модуль для `kiwi-tcms-mcp` и других инструментов.
-
 ## Установка
+
+```bash
+npm install kiwi-tcms-client
+```
+
+Локальная разработка:
 
 ```bash
 npm install

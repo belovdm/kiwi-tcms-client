@@ -2,37 +2,114 @@
   "name": "kiwi-tcms-client",
   "version": "0.1.0",
   "description": "Reusable TypeScript client for the Kiwi TCMS JSON-RPC API",
-  "private": true,
+  "license": "MIT",
+  "author": "Belov <belov.u30gt@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/belovdm/kiwi-tcms-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/belovdm/kiwi-tcms-client/issues"
+  },
+  "homepage": "https://github.com/belovdm/kiwi-tcms-client#readme",
+  "keywords": [
+    "kiwi-tcms",
+    "tcms",
+    "json-rpc",
+    "test-management",
+    "client"
+  ],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
-    ".": "./dist/index.js",
-    "./attachments": "./dist/attachments.js",
-    "./builds": "./dist/builds.js",
-    "./case-statuses": "./dist/case-statuses.js",
-    "./cases": "./dist/cases.js",
-    "./categories": "./dist/categories.js",
-    "./classifications": "./dist/classifications.js",
-    "./components": "./dist/components.js",
-    "./execution-statuses": "./dist/execution-statuses.js",
-    "./executions": "./dist/executions.js",
-    "./plan-types": "./dist/plan-types.js",
-    "./plans": "./dist/plans.js",
-    "./priorities": "./dist/priorities.js",
-    "./projects": "./dist/projects.js",
-    "./runs": "./dist/runs.js",
-    "./tags": "./dist/tags.js",
-    "./users": "./dist/users.js",
-    "./versions": "./dist/versions.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./attachments": {
+      "types": "./dist/attachments.d.ts",
+      "default": "./dist/attachments.js"
+    },
+    "./builds": {
+      "types": "./dist/builds.d.ts",
+      "default": "./dist/builds.js"
+    },
+    "./case-statuses": {
+      "types": "./dist/case-statuses.d.ts",
+      "default": "./dist/case-statuses.js"
+    },
+    "./cases": {
+      "types": "./dist/cases.d.ts",
+      "default": "./dist/cases.js"
+    },
+    "./categories": {
+      "types": "./dist/categories.d.ts",
+      "default": "./dist/categories.js"
+    },
+    "./classifications": {
+      "types": "./dist/classifications.d.ts",
+      "default": "./dist/classifications.js"
+    },
+    "./components": {
+      "types": "./dist/components.d.ts",
+      "default": "./dist/components.js"
+    },
+    "./execution-statuses": {
+      "types": "./dist/execution-statuses.d.ts",
+      "default": "./dist/execution-statuses.js"
+    },
+    "./executions": {
+      "types": "./dist/executions.d.ts",
+      "default": "./dist/executions.js"
+    },
+    "./plan-types": {
+      "types": "./dist/plan-types.d.ts",
+      "default": "./dist/plan-types.js"
+    },
+    "./plans": {
+      "types": "./dist/plans.d.ts",
+      "default": "./dist/plans.js"
+    },
+    "./priorities": {
+      "types": "./dist/priorities.d.ts",
+      "default": "./dist/priorities.js"
+    },
+    "./projects": {
+      "types": "./dist/projects.d.ts",
+      "default": "./dist/projects.js"
+    },
+    "./runs": {
+      "types": "./dist/runs.d.ts",
+      "default": "./dist/runs.js"
+    },
+    "./tags": {
+      "types": "./dist/tags.d.ts",
+      "default": "./dist/tags.js"
+    },
+    "./users": {
+      "types": "./dist/users.d.ts",
+      "default": "./dist/users.js"
+    },
+    "./versions": {
+      "types": "./dist/versions.d.ts",
+      "default": "./dist/versions.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.typecheck.json"
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "prepublishOnly": "npm test && npm run build"
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
