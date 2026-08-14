@@ -1,0 +1,43 @@
+{
+  "name": "kiwi-tcms-client",
+  "version": "0.1.0",
+  "description": "Reusable TypeScript client for the Kiwi TCMS JSON-RPC API",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./attachments": "./dist/attachments.js",
+    "./builds": "./dist/builds.js",
+    "./case-statuses": "./dist/case-statuses.js",
+    "./cases": "./dist/cases.js",
+    "./categories": "./dist/categories.js",
+    "./classifications": "./dist/classifications.js",
+    "./components": "./dist/components.js",
+    "./execution-statuses": "./dist/execution-statuses.js",
+    "./executions": "./dist/executions.js",
+    "./plan-types": "./dist/plan-types.js",
+    "./plans": "./dist/plans.js",
+    "./priorities": "./dist/priorities.js",
+    "./projects": "./dist/projects.js",
+    "./runs": "./dist/runs.js",
+    "./tags": "./dist/tags.js",
+    "./users": "./dist/users.js",
+    "./versions": "./dist/versions.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.typecheck.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "msw": "^2.3.1",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.5"
+  }
+}
