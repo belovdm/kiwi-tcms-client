@@ -5,7 +5,7 @@
 ## Установка
 
 ```bash
-npm install kiwi-tcms-client
+npm install @kiwi-tcms-ai/kiwi-tcms-client
 ```
 
 Локальная разработка:
@@ -20,7 +20,7 @@ npm run build
 ## Использование
 
 ```ts
-import { KiwiClient } from "kiwi-tcms-client";
+import { KiwiClient } from "@kiwi-tcms-ai/kiwi-tcms-client";
 
 const client = new KiwiClient({
   url: "https://tcms.example.com",

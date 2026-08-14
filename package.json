@@ -1,5 +1,5 @@
 {
-  "name": "kiwi-tcms-client",
+  "name": "@kiwi-tcms-ai/kiwi-tcms-client",
   "version": "0.1.0",
   "description": "Reusable TypeScript client for the Kiwi TCMS JSON-RPC API",
   "license": "MIT",
