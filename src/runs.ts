@@ -7,6 +7,7 @@ import {
 import { extractId, extractName } from "./ids.js";
 import { buildIdByName, userIdByName } from "./resolvers.js";
 import type { ListLimit, PageResult } from "./types.js";
+import { getCurrentUser } from "./users.js";
 
 export interface ListRunsParams extends ListLimit {
   query?: string;
@@ -56,13 +57,21 @@ export async function listRuns(
 
 export async function createRun(rpc: KiwiRpcClient, input: CreateRunInput): Promise<unknown> {
   const buildId = await buildIdByName(rpc, input.build);
+  const managerId = input.manager
+    ? await userIdByName(rpc, input.manager)
+    : extractId(await getCurrentUser(rpc));
+  if (managerId === undefined) {
+    throw new Error(
+      "Не удалось определить manager — укажите username/id или проверьте сессию (User.filter).",
+    );
+  }
   const values: Record<string, unknown> = {
     plan: input.plan,
     build: buildId,
     summary: input.summary,
+    manager: managerId,
   };
   if (input.notes) values.notes = input.notes;
-  if (input.manager) values.manager = await userIdByName(rpc, input.manager);
   if (input.default_tester) values.default_tester = await userIdByName(rpc, input.default_tester);
   return rpc.call("TestRun.create", [values]);
 }

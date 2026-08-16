@@ -102,7 +102,7 @@ describe("KiwiClient.cases.create", () => {
     });
 
     expect(createdCalls[0]).toEqual([
-      { summary: "Login", product: 5, category: 11, priority: 3, case_status: 2 },
+      { summary: "Login", category: 11, priority: 3, case_status: 2 },
     ]);
     expect(result.created).toEqual({ id: 77, summary: "Login" });
     expect(result.actions).toEqual(["привязан к плану 12", "тег: smoke"]);

@@ -137,6 +137,37 @@ describe("KiwiClient.cases.update", () => {
   });
 });
 
+describe("KiwiClient.cases.search", () => {
+  it("scopes product via category__product when plan is omitted", async () => {
+    const filters: unknown[] = [];
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "TestCase.filter": (params) => {
+        filters.push(params);
+        return [{ id: 1, summary: "Login" }];
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.cases.search({ automated: true, limit: 5 });
+    expect(filters[0]).toEqual([{ category__product: 5, is_automated: true }]);
+  });
+
+  it("does not add a product lookup when plan is set", async () => {
+    const filters: unknown[] = [];
+    rpcByMethod({
+      "TestCase.filter": (params) => {
+        filters.push(params);
+        return [];
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.cases.search({ plan: 1, automated: true });
+    expect(filters[0]).toEqual([{ plan: 1, is_automated: true }]);
+  });
+});
+
 describe("KiwiClient.cases.get", () => {
   it("returns text raw, without deriving setup/actions/expected from it", async () => {
     rpcByMethod({

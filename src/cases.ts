@@ -64,8 +64,9 @@ export async function searchCases(
   const q: Record<string, unknown> = {};
   if (params.query) q.summary__icontains = params.query;
   if (params.plan) q.plan = params.plan;
-  if (params.product) q.product = await rpc.resolveProductId(params.product);
-  else if (!params.plan && rpc.project) q.product = await rpc.projectProductId();
+  // TestCase.filter has no `product`; Category does.
+  if (params.product) q.category__product = await rpc.resolveProductId(params.product);
+  else if (!params.plan && rpc.project) q.category__product = await rpc.projectProductId();
   if (params.status) q.status__name = params.status;
   if (params.priority) q.priority__value = params.priority;
   if (params.category) q.category__name = params.category;
@@ -128,7 +129,6 @@ export async function createCase(
 
   const values: Record<string, unknown> = {
     summary: input.summary,
-    product: pid,
     category: categoryId,
     priority: priorityId,
     case_status: input.status_id ?? (await caseStatusIdByName(rpc, "CONFIRMED")),

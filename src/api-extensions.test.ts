@@ -81,6 +81,65 @@ describe("projects / builds create", () => {
     expect(created).toEqual([{ name: "Billing", classification: 3 }]);
   });
 
+  it("lists builds scoped by version__product, not product", async () => {
+    const filters: unknown[] = [];
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "Build.filter": (params) => {
+        filters.push(params);
+        return [{ id: 4, name: "dev" }];
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    const listed = await client.builds.list();
+    expect(filters[0]).toEqual([{ version__product: 5 }]);
+    expect(listed.rows).toEqual([{ id: 4, name: "dev" }]);
+  });
+
+  it("creates a run by resolving the build name via version__product", async () => {
+    const filters: unknown[] = [];
+    const created: unknown[] = [];
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "User.filter": () => [{ id: 7, username: "admin" }],
+      "Build.filter": (params) => {
+        filters.push(params);
+        return [{ id: 4, name: "dev" }];
+      },
+      "TestRun.create": (params) => {
+        created.push(params);
+        return params;
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.runs.create({ plan: 1, build: "dev", summary: "CI" });
+    expect(filters[0]).toEqual([{ name: "dev", version__product: 5 }]);
+    expect(created[0]).toEqual([{ plan: 1, build: 4, summary: "CI", manager: 7 }]);
+  });
+
+  it("uses an explicit manager name instead of the session user", async () => {
+    const created: unknown[] = [];
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "Build.filter": () => [{ id: 4, name: "dev" }],
+      "User.filter": (params) => {
+        const q = Array.isArray(params) ? (params[0] as { username?: string }) : {};
+        if (q.username === "qa") return [{ id: 11, username: "qa" }];
+        return [{ id: 7, username: "admin" }];
+      },
+      "TestRun.create": (params) => {
+        created.push(params);
+        return params;
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.runs.create({ plan: 1, build: "dev", summary: "CI", manager: "qa" });
+    expect(created[0]).toEqual([{ plan: 1, build: 4, summary: "CI", manager: 11 }]);
+  });
+
   it("creates a build against a named version", async () => {
     rpcByMethod({
       "Product.filter": () => [{ id: 5, name: "Core" }],
@@ -95,6 +154,25 @@ describe("projects / builds create", () => {
 });
 
 describe("plans / executions / attachments", () => {
+  it("resolves default Functional plan type to stock Function", async () => {
+    const names: string[] = [];
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "Version.filter": () => [{ id: 2, value: "1.0" }],
+      "PlanType.filter": (params) => {
+        const q = Array.isArray(params) ? (params[0] as { name?: string }) : {};
+        names.push(String(q.name));
+        if (q.name === "Function") return [{ id: 3, name: "Function" }];
+        return [];
+      },
+      "TestPlan.create": (params) => params,
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.plans.create({ name: "Exploratory: x" });
+    expect(names).toEqual(["Functional", "Function"]);
+  });
+
   it("updates a plan and returns its tree", async () => {
     rpcByMethod({
       "PlanType.filter": () => [{ id: 2, name: "Acceptance" }],

@@ -15,7 +15,8 @@ export async function listBuilds(
   const pid = params.product
     ? await rpc.resolveProductId(params.product)
     : await rpc.projectProductId();
-  const q: Record<string, unknown> = { product: pid };
+  // Build has no product field — scope via Version (Build.version → Version.product).
+  const q: Record<string, unknown> = { version__product: pid };
   if (params.query) q.name__icontains = params.query;
   const rows = await rpc.call<unknown[]>("Build.filter", [q]);
   return rpc.page(rows, params.limit ?? (rows?.length || 1));

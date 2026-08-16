@@ -28,7 +28,8 @@ export async function buildIdByName(
   if (numeric !== undefined) return numeric;
   const q: Record<string, unknown> = { name: String(nameOrId) };
   const pid = productId ?? (rpc.project ? await rpc.projectProductId() : undefined);
-  if (pid) q.product = pid;
+  // Build.filter has no `product`; the product lives on Version.
+  if (pid) q.version__product = pid;
   const rows = await rpc.call<unknown[]>("Build.filter", [q]);
   const id = firstId(rows);
   if (id === undefined)
@@ -69,16 +70,25 @@ export async function priorityIdByName(
   return id;
 }
 
+const PLAN_TYPE_ALIASES: Record<string, string[]> = {
+  functional: ["Function"],
+  function: ["Functional"],
+};
+
 export async function planTypeIdByName(
   rpc: KiwiRpcClient,
   nameOrId: string | number,
 ): Promise<number> {
   const numeric = asNumericId(nameOrId);
   if (numeric !== undefined) return numeric;
-  const rows = await rpc.call<unknown[]>("PlanType.filter", [{ name: String(nameOrId) }]);
-  const id = firstId(rows);
-  if (id === undefined) throw new Error(`Тип плана "${nameOrId}" не найден (PlanType.filter)`);
-  return id;
+  const name = String(nameOrId);
+  const tried = [name, ...(PLAN_TYPE_ALIASES[name.toLowerCase()] ?? [])];
+  for (const candidate of tried) {
+    const rows = await rpc.call<unknown[]>("PlanType.filter", [{ name: candidate }]);
+    const id = firstId(rows);
+    if (id !== undefined) return id;
+  }
+  throw new Error(`Тип плана "${nameOrId}" не найден (PlanType.filter)`);
 }
 
 export async function classificationIdByName(
