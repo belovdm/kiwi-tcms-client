@@ -55,8 +55,53 @@ export async function listRuns(
   return rpc.page(rows, params.limit ?? (rows?.length || 1));
 }
 
+// TestRun.create rejects a build whose Version differs from the plan's
+// product_version with an opaque "Select a valid choice" error. Check it
+// ourselves first and say what's actually wrong.
+async function assertBuildMatchesPlanVersion(
+  rpc: KiwiRpcClient,
+  planId: number,
+  buildId: number,
+): Promise<void> {
+  let plan: { product_version?: number; product_version__value?: string } | undefined;
+  let build: { name?: string; version?: number; version__value?: string } | undefined;
+  try {
+    const [planRows, buildRows] = await Promise.all([
+      rpc.call<{ id?: number; product_version?: number; product_version__value?: string }[]>(
+        "TestPlan.filter",
+        [{ id: planId }],
+      ),
+      rpc.call<{ id?: number; name?: string; version?: number; version__value?: string }[]>(
+        "Build.filter",
+        [{ id: buildId }],
+      ),
+    ]);
+    plan = planRows?.[0];
+    build = buildRows?.[0];
+  } catch {
+    // Best-effort pre-check — if the lookup itself fails, let TestRun.create
+    // surface the real error instead of masking it here.
+    return;
+  }
+  if (
+    plan?.product_version === undefined ||
+    build?.version === undefined ||
+    plan.product_version === build.version
+  ) {
+    return;
+  }
+  throw new Error(
+    `Сборка "${build.name ?? buildId}" (id ${buildId}) на версии "${
+      build.version__value ?? build.version
+    }", а план ${planId} — на версии "${
+      plan.product_version__value ?? plan.product_version
+    }" (product_version). Создайте сборку на версии плана (kiwi_create_build) или укажите build с той же версией.`,
+  );
+}
+
 export async function createRun(rpc: KiwiRpcClient, input: CreateRunInput): Promise<unknown> {
   const buildId = await buildIdByName(rpc, input.build);
+  await assertBuildMatchesPlanVersion(rpc, input.plan, buildId);
   const managerId = input.manager
     ? await userIdByName(rpc, input.manager)
     : extractId(await getCurrentUser(rpc));

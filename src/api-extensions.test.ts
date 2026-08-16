@@ -140,6 +140,41 @@ describe("projects / builds create", () => {
     expect(created[0]).toEqual([{ plan: 1, build: 4, summary: "CI", manager: 11 }]);
   });
 
+  it("throws a clear error when the build's version differs from the plan's product_version", async () => {
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "User.filter": () => [{ id: 7, username: "admin" }],
+      "Build.filter": () => [{ id: 4, name: "dev", version: 2, version__value: "1.0" }],
+      "TestPlan.filter": () => [
+        { id: 1, product_version: 9, product_version__value: "unspecified" },
+      ],
+      "TestRun.create": (params) => params,
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await expect(client.runs.create({ plan: 1, build: "dev", summary: "CI" })).rejects.toThrow(
+      /версии "1.0".*версии "unspecified"/s,
+    );
+  });
+
+  it("creates the run when the build's version matches the plan's product_version", async () => {
+    const created: unknown[] = [];
+    rpcByMethod({
+      "Product.filter": () => [{ id: 5, name: "Core" }],
+      "User.filter": () => [{ id: 7, username: "admin" }],
+      "Build.filter": () => [{ id: 4, name: "dev", version: 2, version__value: "1.0" }],
+      "TestPlan.filter": () => [{ id: 1, product_version: 2, product_version__value: "1.0" }],
+      "TestRun.create": (params) => {
+        created.push(params);
+        return params;
+      },
+    });
+
+    const client = new KiwiClient({ ...AUTH, project: "Core" });
+    await client.runs.create({ plan: 1, build: "dev", summary: "CI" });
+    expect(created[0]).toEqual([{ plan: 1, build: 4, summary: "CI", manager: 7 }]);
+  });
+
   it("creates a build against a named version", async () => {
     rpcByMethod({
       "Product.filter": () => [{ id: 5, name: "Core" }],

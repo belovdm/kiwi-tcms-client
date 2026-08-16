@@ -1,6 +1,6 @@
 {
   "name": "@kiwi-tcms-ai/kiwi-tcms-client",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Reusable TypeScript client for the Kiwi TCMS JSON-RPC API",
   "license": "MIT",
   "author": "Belov <belov.u30gt@gmail.com>",
